@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin
+	xmlns="http://apache.org/cordova/ns/plugins/1.0"
+	id="cordova-plugin-photolibrary"
+	version="1.0.0">
+
+	<engines>
+		<engine name="cordova-ios" version=">=3.9.0" />
+		<engine name="cordova-android" version=">=4.0.0" />
+	</engines>
+
+	<name>PhotoLibrary</name>
+	<description>Get photos from device library</description>
+	<author>Mathieu Bouchard</author>
+	<keywords>photo,library</keywords>
+
+	<js-module src="www/PhotoLibrary.js" name="PhotoLibrary">
+		<clobbers target="PhotoLibrary" />
+	</js-module>
+
+	<platform name="ios">
+		<config-file target="config.xml" parent="/*">
+			<feature name="PhotoLibrary">
+				<param name="ios-package" value="PhotoLibrary" />
+			</feature>
+		</config-file>
+
+		<header-file src="src/ios/PhotoLibrary.h" />
+		<source-file src="src/ios/PhotoLibrary.m" />
+		<framework src="ImageIO.framework" weak="true" />
+		<framework src="CoreLocation.framework" />
+		<framework src="CoreGraphics.framework" />
+		<framework src="AssetsLibrary.framework" />
+		<framework src="MobileCoreServices.framework" />
+	</platform>
+</plugin>
