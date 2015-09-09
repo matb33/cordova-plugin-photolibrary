@@ -11,7 +11,12 @@ module.exports = {
 			callback(null, {});
 		} else {
 			exec(function success(result) {
-				callback(null, result || {});
+				callback(null, _.map(result || [], function (path) {
+					if (path.indexOf('/var/mobile') !== -1) {
+						path = 'cdvfile://localhost/persistent/' + path.replace(/.*Documents\//, '');
+					}
+					return path;
+				});
 			}, function error(err) {
 				callback(err, {});
 			}, "PhotoLibrary", "getRandomPhotos", [howMany]);
