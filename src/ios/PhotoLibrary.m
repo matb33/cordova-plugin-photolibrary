@@ -25,6 +25,15 @@
     return randomIndexes;
 }
 
+- (UIImage*) normalizeImage:(UIImage*)image {
+  if (image.imageOrientation == UIImageOrientationUp) return image;
+  UIGraphicsBeginImageContextWithOptions(image.size, NO, image.scale);
+  [image drawInRect:(CGRect){0, 0, image.size}];
+  UIImage *normalizedImage = UIGraphicsGetImageFromCurrentImageContext();
+  UIGraphicsEndImageContext();
+  return normalizedImage;
+}
+
 - (void)getRandomPhotos:(CDVInvokedUrlCommand*)command {
     NSNumber *howMany = [command argumentAtIndex:0];
 
@@ -55,8 +64,8 @@
                                                               contentMode:PHImageContentModeAspectFill
                                                                   options:options
                                                             resultHandler:^(UIImage *image, NSDictionary *info) {
-
-                                                                NSData *imageData = UIImagePNGRepresentation(image);
+                                                                UIImage *normalizedImage = [self normalizeImage:image];
+                                                                NSData *imageData = UIImagePNGRepresentation(normalizedImage);
                                                                 NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
                                                                 NSString *documentsDirectory = [paths objectAtIndex:0];
                                                                 NSString *imagePath = [documentsDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png", [NSString stringWithFormat:@"cached-%@", @(idx)]]];
