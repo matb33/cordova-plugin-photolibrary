@@ -12,10 +12,14 @@ module.exports = {
 		} else {
 			exec(function success(result) {
 				callback(null, _.map(result || [], function (path) {
+					var obj = {};
+
+					obj.path = path;
 					if (path.indexOf('/var/mobile') !== -1) {
-						path = 'cdvfile://localhost/persistent/' + path.replace(/.*Documents\//, '');
+						obj.cdvfile = 'cdvfile://localhost/persistent/' + path.replace(/.*Documents\//, '');
 					}
-					return path;
+
+					return obj;
 				}));
 			}, function error(err) {
 				callback(err, null);
