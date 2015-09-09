@@ -1,53 +1,47 @@
 #import "PhotoLibrary.h"
-#import <AssetsLibrary/ALAssetRepresentation.h>
-#import <CoreLocation/CoreLocation.h>
+#import <Photos/Photos.h>
 
 @implementation PhotoLibrary
 
-+ (ALAssetsLibrary *)defaultAssetsLibrary {
-  static dispatch_once_t pred = 0;
-  static ALAssetsLibrary *library = nil;
-  dispatch_once(&pred, ^{
-    library = [[ALAssetsLibrary alloc] init];
-  });
+@synthesize mutableArrayContainingNumbers;
 
-  // TODO: Dealloc this later?
-  return library;
+- (NSInteger) getRandomNumber:(NSUInteger)maxRandomNumber {
+    NSUInteger randomNumber = (NSInteger) arc4random_uniform(maxRandomNumber);
+    if ([self.mutableArrayContainingNumbers containsObject: [NSNumber numberWithInteger:randomNumber]]) {
+        return [self getRandomNumber:maxRandomNumber]; // call the method again and get a new object
+    } else {
+        [self.mutableArrayContainingNumbers addObject: [NSNumber numberWithInteger:randomNumber]];
+        return randomNumber;
+    }
 }
 
-- (void)getPhotos:(CDVInvokedUrlCommand*)command
-{
-  // Grab the asset library
-  ALAssetsLibrary *library = [PhotoLibrary defaultAssetsLibrary];
-
-  // Run a background job
-  [self.commandDelegate runInBackground:^{
-    // Enumerate all of the group saved photos, which is our Camera Roll on iOS
-    [library enumerateGroupsWithTypes:ALAssetsGroupSavedPhotos usingBlock:^(ALAssetsGroup *group, BOOL *stop) {
-      // When there are no more images, the group will be nil
-      if (group == nil) {
-        // Send a null response to indicate the end of photostreaming
-        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:nil];
-        [pluginResult setKeepCallbackAsBool:YES];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-      } else {
-        // Enumarate this group of images
-        [group enumerateAssetsUsingBlock:^(ALAsset *result, NSUInteger index, BOOL *stop) {
-          NSDictionary *urls = [result valueForProperty:ALAssetPropertyURLs];
-          [urls enumerateKeysAndObjectsUsingBlock:^(id key, NSURL *obj, BOOL *stop) {
-            // Send the URL for this asset back to the JS callback
-            CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:obj.absoluteString];
-            [pluginResult setKeepCallbackAsBool:YES];
-            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
-          }];
+- (void)getRandomPhotos:(CDVInvokedUrlCommand*)command {
+    NSNumber* howMany = [command argumentAtIndex:0 withDefault:nil];
+    
+    [self.commandDelegate runInBackground:^{
+        PHFetchResult *fetchResult = [PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeImage options:nil];
+        
+        // generate howMany randomIndexes with a maximum based on fetchResult.count
+        NSMutableIndexSet *randomIndexes = [NSMutableIndexSet indexSet];
+        for (int i = 0; i < (int)howMany; i++) {
+            [randomIndexes addIndex:[self getRandomNumber:fetchResult.count]];
+        }
+        
+        NSMutableArray *randomPhotos = [[NSMutableArray alloc] init];
+        [fetchResult enumerateObjectsAtIndexes:randomIndexes options:NSEnumerationConcurrent usingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop) {
+            [[PHImageManager defaultManager] requestImageForAsset:asset
+                                             targetSize:CGSizeMake(1920, 1080)
+                                             contentMode:PHImageContentModeAspectFill
+                                             options:PHImageRequestOptionsVersionCurrent
+                                             resultHandler:^(UIImage *result, NSDictionary *info) {
+                                                 NSURL* imageURL = [info objectForKey:UIImagePickerControllerReferenceURL];
+                                                [randomPhotos addObject:imageURL];
+                                             }];
         }];
-      }
-    } failureBlock:^(NSError *error) {
-      // Ruh-roh, something bad happened.
-      CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:error.localizedDescription];
-      [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsMultipart:randomPhotos];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
-  }];
 }
 
 @end

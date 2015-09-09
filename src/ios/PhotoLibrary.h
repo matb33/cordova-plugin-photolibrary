@@ -1,11 +1,11 @@
 #import <Foundation/Foundation.h>
-#import <CoreLocation/CoreLocation.h>
-#import <CoreLocation/CLLocationManager.h>
 #import <Cordova/CDVPlugin.h>
 
 @interface PhotoLibrary : CDVPlugin
 {}
 
-- (void)getPhotos:(CDVInvokedUrlCommand*)command;
+@property (strong, nonatomic) NSMutableArray *mutableArrayContainingNumbers;
+
+- (void)getRandomPhotos:(CDVInvokedUrlCommand*)command;
 
 @end

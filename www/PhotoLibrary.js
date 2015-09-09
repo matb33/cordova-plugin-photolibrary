@@ -3,8 +3,8 @@ console.log("[PhotoLibrary] installing...");
 var exec = require("cordova/exec");
 
 module.exports = {
-	getPhotos: function (howMany, callback) {
-		console.log("[PhotoLibrary] getPhotos");
+	getRandomPhotos: function (howMany, callback) {
+		console.log("[PhotoLibrary] getRandomPhotos");
 
 		if (navigator.userAgent.indexOf("Android") !== -1) {
 			// Android done in JS (TODO)
@@ -14,7 +14,7 @@ module.exports = {
 				callback(null, result || {});
 			}, function error(err) {
 				callback(err, {});
-			}, "PhotoLibrary", "getPhotos", [howMany]);
+			}, "PhotoLibrary", "getRandomPhotos", [howMany]);
 		}
 	}
 };
