@@ -16,7 +16,7 @@ module.exports = {
 						path = 'cdvfile://localhost/persistent/' + path.replace(/.*Documents\//, '');
 					}
 					return path;
-				});
+				}));
 			}, function error(err) {
 				callback(err, null);
 			}, "PhotoLibrary", "getRandomPhotos", [howMany]);
