@@ -51,7 +51,7 @@
                     options.networkAccessAllowed = NO;
 
                     [[PHImageManager defaultManager] requestImageForAsset:asset
-                                                               targetSize:CGSizeMake(asset.pixelWidth * 0.25, asset.pixelHeight * 0.25)
+                                                               targetSize:CGSizeMake(asset.pixelWidth * 0.5, asset.pixelHeight * 0.5)
                                                               contentMode:PHImageContentModeAspectFill
                                                                   options:options
                                                             resultHandler:^(UIImage *image, NSDictionary *info) {
@@ -59,7 +59,7 @@
                                                                 NSData *imageData = UIImagePNGRepresentation(image);
                                                                 NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
                                                                 NSString *documentsDirectory = [paths objectAtIndex:0];
-                                                                NSString *imagePath = [documentsDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png", [NSString stringWithFormat:@"tmp/cached-%@", @(idx)]]];
+                                                                NSString *imagePath = [documentsDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png", [NSString stringWithFormat:@"cached-%@", @(idx)]]];
 
                                                                 if (![imageData writeToFile:imagePath atomically:YES]) {
                                                                     NSLog(@"[getRandomPhotos] Failed to cache image data to disk");
