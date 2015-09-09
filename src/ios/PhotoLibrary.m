@@ -1,12 +1,14 @@
-#import "PhotoLibrary.h"
+#import <Cordova/CDV.h>
 #import <Photos/Photos.h>
+
+#import "PhotoLibrary.h"
 
 @implementation PhotoLibrary
 
 @synthesize mutableArrayContainingNumbers;
 
 - (NSInteger) getRandomNumber:(NSUInteger)maxRandomNumber {
-    NSUInteger randomNumber = (NSInteger) arc4random_uniform(maxRandomNumber);
+    NSUInteger randomNumber = (NSInteger) arc4random_uniform((int)maxRandomNumber);
     if ([self.mutableArrayContainingNumbers containsObject: [NSNumber numberWithInteger:randomNumber]]) {
         return [self getRandomNumber:maxRandomNumber]; // call the method again and get a new object
     } else {
@@ -17,16 +19,16 @@
 
 - (void)getRandomPhotos:(CDVInvokedUrlCommand*)command {
     NSNumber* howMany = [command argumentAtIndex:0 withDefault:nil];
-    
+
     [self.commandDelegate runInBackground:^{
         PHFetchResult *fetchResult = [PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeImage options:nil];
-        
+
         // generate howMany randomIndexes with a maximum based on fetchResult.count
         NSMutableIndexSet *randomIndexes = [NSMutableIndexSet indexSet];
         for (int i = 0; i < (int)howMany; i++) {
             [randomIndexes addIndex:[self getRandomNumber:fetchResult.count]];
         }
-        
+
         NSMutableArray *randomPhotos = [[NSMutableArray alloc] init];
         [fetchResult enumerateObjectsAtIndexes:randomIndexes options:NSEnumerationConcurrent usingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop) {
             [[PHImageManager defaultManager] requestImageForAsset:asset
