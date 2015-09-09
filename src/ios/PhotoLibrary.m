@@ -17,46 +17,58 @@
     }
 }
 
+- (NSMutableIndexSet*) generateRandomIndexes:(NSNumber*)howMany :(NSUInteger)maxRandomNumber {
+    NSMutableIndexSet *randomIndexes = [[NSMutableIndexSet alloc] init];
+    
+    for (int i = 0; i < [howMany intValue]; i++) {
+        [randomIndexes addIndex:[self getRandomNumber:maxRandomNumber]];
+    }
+    
+    return randomIndexes;
+}
+
 - (void)getRandomPhotos:(CDVInvokedUrlCommand*)command {
-    NSNumber* howMany = [command argumentAtIndex:0];
+    NSNumber *howMany = [command argumentAtIndex:0];
+    NSNumber *targetWidth = [command argumentAtIndex:1 withDefault:@(1280)];
+    NSNumber *targetHeight = [command argumentAtIndex:2 withDefault:@(720)];
     
     NSLog(@"[getRandomPhotos] howMany: %@", howMany);
     
     [self.commandDelegate runInBackground:^{
         PHFetchResult *fetchResult = [PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeImage options:nil];
-        
-        // generate howMany randomIndexes with a maximum based on fetchResult.count
-        NSMutableIndexSet *randomIndexes = [[NSMutableIndexSet alloc] init];
-        for (int i = 0; i < [howMany intValue]; i++) {
-            [randomIndexes addIndex:[self getRandomNumber:fetchResult.count]];
-        }
-        
-        NSLog(@"[getRandomPhotos] randomIndexes: %@", randomIndexes);
-        
+        NSUInteger fetchResultCount = fetchResult.count;
         NSMutableArray *randomPhotos = [[NSMutableArray alloc] init];
-        [fetchResult enumerateObjectsAtIndexes:randomIndexes options:0 usingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop) {
-            NSLog(@"[getRandomPhotos] asset: %@", asset);
-            
-            PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
-            options.version = PHImageRequestOptionsVersionOriginal;
-            options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
-            options.resizeMode = PHImageRequestOptionsResizeModeNone;
-            options.synchronous = YES;
-            options.networkAccessAllowed = NO;
-            
-            [[PHImageManager defaultManager] requestImageForAsset:asset
-                                                       targetSize:CGSizeMake(1920, 1080)
-                                                      contentMode:PHImageContentModeAspectFill
-                                                          options:options
-                                                    resultHandler:^(UIImage *result, NSDictionary *info) {
-                                                        NSURL *imageFileURL = [info objectForKey:@"PHImageFileURLKey"];
-                                                        NSString *imageURL = [imageFileURL relativePath];
-                                                        NSLog(@"[getRandomPhotos] imageURL: %@", imageURL);
-                                                        if (imageURL) {
-                                                            [randomPhotos addObject:imageURL];
-                                                        }
-                                                    }];
-        }];
+        
+        if (fetchResultCount > 0) {
+            while (randomPhotos.count < howMany.intValue) {
+                NSMutableIndexSet *randomIndexes = [self generateRandomIndexes:howMany :fetchResultCount];
+                NSLog(@"[getRandomPhotos] randomIndexes: %@", randomIndexes);
+                
+                [fetchResult enumerateObjectsAtIndexes:randomIndexes options:0 usingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop) {
+                    NSLog(@"[getRandomPhotos] asset: %@", asset);
+                    
+                    PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
+                    options.version = PHImageRequestOptionsVersionOriginal;
+                    options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
+                    options.resizeMode = PHImageRequestOptionsResizeModeNone;
+                    options.synchronous = YES;
+                    options.networkAccessAllowed = NO;
+                    
+                    [[PHImageManager defaultManager] requestImageForAsset:asset
+                                                               targetSize:CGSizeMake(targetWidth.floatValue, targetHeight.floatValue)
+                                                              contentMode:PHImageContentModeAspectFill
+                                                                  options:options
+                                                            resultHandler:^(UIImage *result, NSDictionary *info) {
+                                                                NSURL *imageFileURL = [info objectForKey:@"PHImageFileURLKey"];
+                                                                NSString *imageURL = [imageFileURL relativePath];
+                                                                NSLog(@"[getRandomPhotos] imageURL: %@", imageURL);
+                                                                if (imageURL) {
+                                                                    [randomPhotos addObject:imageURL];
+                                                                }
+                                                            }];
+                }];
+            }
+        }
         
         CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:randomPhotos];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];

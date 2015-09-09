@@ -14,8 +14,6 @@
 	<author>Mathieu Bouchard</author>
 	<keywords>photo,library</keywords>
 
-	<access origin="*" />
-
 	<js-module src="www/PhotoLibrary.js" name="PhotoLibrary">
 		<clobbers target="PhotoLibrary" />
 	</js-module>
