@@ -24,7 +24,7 @@
     
     [self.commandDelegate runInBackground:^{
         PHFetchResult *fetchResult = [PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeImage options:nil];
-
+        
         // generate howMany randomIndexes with a maximum based on fetchResult.count
         NSMutableIndexSet *randomIndexes = [[NSMutableIndexSet alloc] init];
         for (int i = 0; i < [howMany intValue]; i++) {
@@ -38,7 +38,9 @@
             NSLog(@"[getRandomPhotos] asset: %@", asset);
             
             PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
+            options.version = PHImageRequestOptionsVersionOriginal;
             options.deliveryMode = PHImageRequestOptionsDeliveryModeHighQualityFormat;
+            options.resizeMode = PHImageRequestOptionsResizeModeNone;
             options.synchronous = YES;
             options.networkAccessAllowed = NO;
             
@@ -47,14 +49,16 @@
                                                       contentMode:PHImageContentModeAspectFill
                                                           options:options
                                                     resultHandler:^(UIImage *result, NSDictionary *info) {
-                                                         NSURL *imageFileURL = [info objectForKey:@"PHImageFileURLKey"];
+                                                        NSURL *imageFileURL = [info objectForKey:@"PHImageFileURLKey"];
                                                         NSString *imageURL = [imageFileURL relativePath];
                                                         NSLog(@"[getRandomPhotos] imageURL: %@", imageURL);
-                                                        [randomPhotos addObject:imageURL];
+                                                        if (imageURL) {
+                                                            [randomPhotos addObject:imageURL];
+                                                        }
                                                     }];
         }];
         
-        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsMultipart:randomPhotos];
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:randomPhotos];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
     }];
 }
@@ -87,4 +91,4 @@
  self.imageView.image = result;
  }];
  }
-*/
+ */
