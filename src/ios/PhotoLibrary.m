@@ -36,62 +36,68 @@
 
 - (void)getRandomPhotos:(CDVInvokedUrlCommand*)command {
     NSNumber *howMany = [command argumentAtIndex:0];
-
+    
     NSLog(@"[getRandomPhotos] howMany: %@", howMany);
-
+    
     [self.commandDelegate runInBackground:^{
-        PHFetchResult *fetchResult = [PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeImage options:nil];
-        NSUInteger fetchResultCount = fetchResult.count;
         NSMutableArray *randomPhotos = [[NSMutableArray alloc] init];
-
-        if (fetchResultCount > 0) {
-            while (randomPhotos.count < howMany.intValue) {
-                NSMutableIndexSet *randomIndexes = [self generateRandomIndexes:howMany :fetchResultCount];
-                NSLog(@"[getRandomPhotos] randomIndexes: %@", randomIndexes);
-
-                [fetchResult enumerateObjectsAtIndexes:randomIndexes options:0 usingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop) {
-                    NSLog(@"[getRandomPhotos] asset: %@", asset);
-
-                    PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
-                    options.version = PHImageRequestOptionsVersionOriginal;
-                    options.deliveryMode = PHImageRequestOptionsDeliveryModeFastFormat;
-                    options.resizeMode = PHImageRequestOptionsResizeModeFast;
-                    options.synchronous = YES;
-                    options.networkAccessAllowed = NO;
-
-                    [[PHImageManager defaultManager] requestImageForAsset:asset
-                                                               targetSize:CGSizeMake(asset.pixelWidth * 0.5, asset.pixelHeight * 0.5)
-                                                              contentMode:PHImageContentModeAspectFill
-                                                                  options:options
-                                                            resultHandler:^(UIImage *image, NSDictionary *info) {
-                                                                NSLog(@"[getRandomPhotos] Normalizing image...");
-                                                                UIImage *normalizedImage = [self normalizeImage:image];
-                                                                NSLog(@"[getRandomPhotos] Generating JPEG representation...");
-                                                                NSData *imageData = UIImageJPEGRepresentation(normalizedImage, 0.6);
-                                                                if (imageData) {
-                                                                    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-                                                                    NSString *documentsDirectory = [paths objectAtIndex:0];
-                                                                    NSString *imagePath = [documentsDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.jpg", [NSString stringWithFormat:@"Picture %@", @(idx)]]];
-                                                                    NSError* error;
-
-                                                                    NSLog(@"[getRandomPhotos] Writing to disk: %@", imagePath);
-                                                                    BOOL written = [imageData writeToFile:imagePath options:NSDataWritingAtomic error:&error];
-                                                                    if (written) {
-                                                                        NSLog(@"[getRandomPhotos] Successfully cached: %@", imagePath);
-                                                                        [randomPhotos addObject:imagePath];
-                                                                    } else {
-                                                                        NSLog(@"[getRandomPhotos] Failed to cache: %@ %@", imagePath, error);
-                                                                    }
-                                                                } else {
-                                                                    NSLog(@"[getRandomPhotos] Could not convert to JPEG, skipping...");
-                                                                }
-                                                            }];
-                }];
+        
+        [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus authorizationStatus) {
+            if (authorizationStatus == PHAuthorizationStatusAuthorized) {
+                
+                PHFetchResult *fetchResult = [PHAsset fetchAssetsWithMediaType:PHAssetMediaTypeImage options:nil];
+                NSUInteger fetchResultCount = fetchResult.count;
+                
+                if (fetchResultCount > 0) {
+                    while (randomPhotos.count < howMany.intValue) {
+                        NSMutableIndexSet *randomIndexes = [self generateRandomIndexes:howMany :fetchResultCount];
+                        NSLog(@"[getRandomPhotos] randomIndexes: %@", randomIndexes);
+                        
+                        [fetchResult enumerateObjectsAtIndexes:randomIndexes options:0 usingBlock:^(PHAsset *asset, NSUInteger idx, BOOL *stop) {
+                            NSLog(@"[getRandomPhotos] asset: %@", asset);
+                            
+                            PHImageRequestOptions *options = [[PHImageRequestOptions alloc] init];
+                            options.version = PHImageRequestOptionsVersionOriginal;
+                            options.deliveryMode = PHImageRequestOptionsDeliveryModeFastFormat;
+                            options.resizeMode = PHImageRequestOptionsResizeModeFast;
+                            options.synchronous = YES;
+                            options.networkAccessAllowed = NO;
+                            
+                            [[PHImageManager defaultManager] requestImageForAsset:asset
+                                                                       targetSize:CGSizeMake(asset.pixelWidth * 0.5, asset.pixelHeight * 0.5)
+                                                                      contentMode:PHImageContentModeAspectFill
+                                                                          options:options
+                                                                    resultHandler:^(UIImage *image, NSDictionary *info) {
+                                                                        NSLog(@"[getRandomPhotos] Normalizing image...");
+                                                                        UIImage *normalizedImage = [self normalizeImage:image];
+                                                                        NSLog(@"[getRandomPhotos] Generating JPEG representation...");
+                                                                        NSData *imageData = UIImageJPEGRepresentation(normalizedImage, 0.6);
+                                                                        if (imageData) {
+                                                                            NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+                                                                            NSString *documentsDirectory = [paths objectAtIndex:0];
+                                                                            NSString *imagePath = [documentsDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.jpg", [NSString stringWithFormat:@"Picture %@", @(idx)]]];
+                                                                            NSError* error;
+                                                                            
+                                                                            NSLog(@"[getRandomPhotos] Writing to disk: %@", imagePath);
+                                                                            BOOL written = [imageData writeToFile:imagePath options:NSDataWritingAtomic error:&error];
+                                                                            if (written) {
+                                                                                NSLog(@"[getRandomPhotos] Successfully cached: %@", imagePath);
+                                                                                [randomPhotos addObject:imagePath];
+                                                                            } else {
+                                                                                NSLog(@"[getRandomPhotos] Failed to cache: %@ %@", imagePath, error);
+                                                                            }
+                                                                        } else {
+                                                                            NSLog(@"[getRandomPhotos] Could not convert to JPEG, skipping...");
+                                                                        }
+                                                                    }];
+                        }];
+                    }
+                }
             }
-        }
-
-        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:randomPhotos];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+            
+            CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsArray:randomPhotos];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        }];
     }];
 }
 
