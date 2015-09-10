@@ -26,12 +26,12 @@
 }
 
 - (UIImage*) normalizeImage:(UIImage*)image {
-  if (image.imageOrientation == UIImageOrientationUp) return image;
-  UIGraphicsBeginImageContextWithOptions(image.size, NO, image.scale);
-  [image drawInRect:(CGRect){0, 0, image.size}];
-  UIImage *normalizedImage = UIGraphicsGetImageFromCurrentImageContext();
-  UIGraphicsEndImageContext();
-  return normalizedImage;
+    if (image.imageOrientation == UIImageOrientationUp) return image;
+    UIGraphicsBeginImageContextWithOptions(image.size, NO, image.scale);
+    [image drawInRect:(CGRect){0, 0, image.size}];
+    UIImage *normalizedImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    return normalizedImage;
 }
 
 - (void)getRandomPhotos:(CDVInvokedUrlCommand*)command {
@@ -64,17 +64,26 @@
                                                               contentMode:PHImageContentModeAspectFill
                                                                   options:options
                                                             resultHandler:^(UIImage *image, NSDictionary *info) {
+                                                                NSLog(@"[getRandomPhotos] Normalizing image...");
                                                                 UIImage *normalizedImage = [self normalizeImage:image];
-                                                                NSData *imageData = UIImagePNGRepresentation(normalizedImage);
-                                                                NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-                                                                NSString *documentsDirectory = [paths objectAtIndex:0];
-                                                                NSString *imagePath = [documentsDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png", [NSString stringWithFormat:@"cached-%@", @(idx)]]];
+                                                                NSLog(@"[getRandomPhotos] Generating JPEG representation...");
+                                                                NSData *imageData = UIImageJPEGRepresentation(normalizedImage, 0.6);
+                                                                if (imageData) {
+                                                                    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+                                                                    NSString *documentsDirectory = [paths objectAtIndex:0];
+                                                                    NSString *imagePath = [documentsDirectory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.jpg", [NSString stringWithFormat:@"Picture %@", @(idx)]]];
+                                                                    NSError* error;
 
-                                                                if (![imageData writeToFile:imagePath atomically:YES]) {
-                                                                    NSLog(@"[getRandomPhotos] Failed to cache image data to disk");
+                                                                    NSLog(@"[getRandomPhotos] Writing to disk: %@", imagePath);
+                                                                    BOOL written = [imageData writeToFile:imagePath options:NSDataWritingAtomic error:&error];
+                                                                    if (written) {
+                                                                        NSLog(@"[getRandomPhotos] Successfully cached: %@", imagePath);
+                                                                        [randomPhotos addObject:imagePath];
+                                                                    } else {
+                                                                        NSLog(@"[getRandomPhotos] Failed to cache: %@ %@", imagePath, error);
+                                                                    }
                                                                 } else {
-                                                                    NSLog(@"[getRandomPhotos] imagePath: %@", imagePath);
-                                                                    [randomPhotos addObject:imagePath];
+                                                                    NSLog(@"[getRandomPhotos] Could not convert to JPEG, skipping...");
                                                                 }
                                                             }];
                 }];
